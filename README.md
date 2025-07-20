@@ -1,0 +1,1 @@
+# mindsync-core-api
