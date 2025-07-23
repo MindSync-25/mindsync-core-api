@@ -51,13 +51,13 @@ exports.register = async (req, res) => {
     return res.status(400).json({ message: 'All fields required & passwords must match' });
   }
   // 1) Check existing
-  const { rows } = await pool.query('SELECT id FROM users WHERE email=$1', [email]);
+  const { rows } = await pool.query('SELECT id FROM public.users WHERE email=$1', [email]);
   if (rows.length) return res.status(409).json({ message: 'Email already in use' });
 
   // 2) Insert
   const hash = await bcrypt.hash(password, 12);
   await pool.query(
-    `INSERT INTO users (name,email,password_hash) VALUES ($1,$2,$3)`,
+    `INSERT INTO public.users (name,email,password_hash) VALUES ($1,$2,$3)`,
     [name,email,hash]
   );
   res.status(201).json({ message: 'Registered successfully' });
@@ -67,10 +67,10 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
   // 1) Find user
   const { rows } = await pool.query(
-    'SELECT id, name, password_hash FROM users WHERE email=$1',
+    'SELECT id, name, password_hash FROM public.users WHERE email=$1',
     [email]
   );
-  if (!rows.length) return res.status(401).json({ message: 'Invalid email or password' });
+  if (!rows.length) return res.status(401).json({ message: 'Invalid email' });
 
   const user = rows[0];
   // 2) Check password
@@ -163,7 +163,7 @@ exports.googleLogin = async (req, res) => {
 
     // Upsert by google_id or email
     let { rows } = await pool.query(
-      'SELECT id FROM users WHERE google_id=$1 OR email=$2',
+      'SELECT id FROM public.users WHERE google_id=$1 OR email=$2',
       [googleId, email]
     );
     let userId;
@@ -171,12 +171,12 @@ exports.googleLogin = async (req, res) => {
       userId = rows[0].id;
       // attach google_id if missing
       await pool.query(
-        'UPDATE users SET google_id = $1 WHERE id = $2',
+        'UPDATE public.users SET google_id = $1 WHERE id = $2',
         [googleId, userId]
       );
     } else {
       const insert = await pool.query(
-        `INSERT INTO users (name,email,google_id,avatar) 
+        `INSERT INTO public.users (name,email,google_id,avatar) 
          VALUES ($1,$2,$3,$4) RETURNING id`,
         [name,email,googleId,picture]
       );
@@ -200,16 +200,16 @@ exports.appleLogin = async (req, res) => {
     const { sub: appleId, email } = payload;
 
     let { rows } = await pool.query(
-      'SELECT id FROM users WHERE apple_id=$1 OR email=$2',
+      'SELECT id FROM public.users WHERE apple_id=$1 OR email=$2',
       [appleId, email]
     );
     let userId;
     if (rows.length) {
       userId = rows[0].id;
-      await pool.query('UPDATE users SET apple_id=$1 WHERE id=$2', [appleId, userId]);
+      await pool.query('UPDATE public.users SET apple_id=$1 WHERE id=$2', [appleId, userId]);
     } else {
       const insert = await pool.query(
-        `INSERT INTO users (email,apple_id,name) VALUES ($1,$2,$3) RETURNING id`,
+        `INSERT INTO public.users (email,apple_id,name) VALUES ($1,$2,$3) RETURNING id`,
         [email,appleId,email.split('@')[0]]
       );
       userId = insert.rows[0].id;

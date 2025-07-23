@@ -20,6 +20,11 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 
+// Test route to verify backend is running
+app.get('/test', (req, res) => {
+  res.json({ message: 'Backend is working!' });
+});
+
 
 // Start the server
 const PORT = process.env.PORT || 5000;

@@ -1,10 +1,16 @@
 // db.js
 const { Pool } = require('pg');
 require('dotenv').config();
+console.log('⎈ POSTGRES_URL=', process.env.POSTGRES_URL);
 
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL, 
-  // e.g. "postgres://postgres:secret@localhost:5432/mindsync"
+  user:'postgres',
+  password:'root',
+  host:'localhost',
+  port:5433,
+  database:'mindsync'
 });
 
-module.exports = pool;
+module.exports = {
+	query: (text,params) => pool.query(text,params)
+};
