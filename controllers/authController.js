@@ -67,7 +67,7 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
   // 1) Find user
   const { rows } = await pool.query(
-    'SELECT id, name, password_hash FROM public.users WHERE email=$1',
+    'SELECT id, name, email, password_hash FROM public.users WHERE email=$1',
     [email]
   );
   if (!rows.length) return res.status(401).json({ message: 'Invalid email' });
@@ -79,7 +79,16 @@ exports.login = async (req, res) => {
   }
   // 3) Issue JWT
   const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
-  res.json({ message: 'Logged in successfully', token, user: { id: user.id, name: user.name, email } });
+  const responseData = {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    }
+  };
+  console.log('Login response:', responseData);
+  res.json(responseData);
 };
 
 // exports.googleLogin = async (req, res) => {
