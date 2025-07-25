@@ -1,4 +1,4 @@
-const pool = require('../db');
+const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt  = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
@@ -47,48 +47,49 @@ const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 // };
 exports.register = async (req, res) => {
   const { name, email, password, confirmPassword } = req.body;
-  if (!name||!email||!password||password!==confirmPassword) {
+  if (!name || !email || !password || password !== confirmPassword) {
     return res.status(400).json({ message: 'All fields required & passwords must match' });
   }
-  // 1) Check existing
-  const { rows } = await pool.query('SELECT id FROM public.users WHERE email=$1', [email]);
-  if (rows.length) return res.status(409).json({ message: 'Email already in use' });
-
-  // 2) Insert
-  const hash = await bcrypt.hash(password, 12);
-  await pool.query(
-    `INSERT INTO public.users (name,email,password_hash) VALUES ($1,$2,$3)`,
-    [name,email,hash]
-  );
-  res.status(201).json({ message: 'Registered successfully' });
+  try {
+    // Check if user exists
+    const existing = await User.findOne({ where: { email } });
+    if (existing) return res.status(409).json({ message: 'Email already in use' });
+    // Hash password
+    const hash = await bcrypt.hash(password, 12);
+    // Create user (UUID primary key)
+    const user = await User.create({ name, email, password: hash });
+    res.status(201).json({
+      message: 'Registered successfully',
+      user: { id: user.id, name: user.name, email: user.email }
+    });
+  } catch (err) {
+    console.error('Register Error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  // 1) Find user
-  const { rows } = await pool.query(
-    'SELECT id, name, email, password_hash FROM public.users WHERE email=$1',
-    [email]
-  );
-  if (!rows.length) return res.status(401).json({ message: 'Invalid email' });
-
-  const user = rows[0];
-  // 2) Check password
-  if (!user.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
-    return res.status(401).json({ message: 'Invalid email or password' });
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(401).json({ message: 'Invalid email' });
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ message: 'Invalid email or password' });
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const responseData = {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    };
+    console.log('Login response:', responseData);
+    res.json(responseData);
+  } catch (err) {
+    console.error('Login Error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
-  // 3) Issue JWT
-  const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
-  const responseData = {
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email
-    }
-  };
-  console.log('Login response:', responseData);
-  res.json(responseData);
 };
 
 // exports.googleLogin = async (req, res) => {

@@ -1,46 +1,49 @@
-// models/User.js
-const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
+// models/User.js
+const { DataTypes } = require('sequelize');
+const sequelize = require('../db/sequelize');
+
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
   name: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   email: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    lowercase: true,
-    trim: true,
   },
   password: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   googleId: {
-    type: String,
+    type: DataTypes.STRING,
     unique: true,
-    sparse: true,
+    allowNull: true,
+    field: 'google_id',
   },
   appleId: {
-    type: String,
+    type: DataTypes.STRING,
     unique: true,
-    sparse: true,
+    allowNull: true,
+    field: 'apple_id',
   },
   avatar: {
-    type: String,
+    type: DataTypes.STRING,
+    allowNull: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  tableName: 'users',
+  timestamps: true,
+  underscored: true,
 });
 
-// Ensure indexes for unique constraints
-userSchema.index({ email: 1 }, { unique: true });({ email: 1 }, { unique: true });
-userSchema.index({ googleId: 1 }, { unique: true, sparse: true });
-userSchema.index({ appleId: 1 }, { unique: true, sparse: true });
-
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;
 
 
