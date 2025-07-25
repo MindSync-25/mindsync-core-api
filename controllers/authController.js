@@ -163,21 +163,26 @@ exports.login = async (req, res) => {
 // };
 
 exports.googleLogin = async (req, res) => {
+  console.log('Google login endpoint called with body:', req.body);
   try {
     const { idToken } = req.body;
-    const ticket = await googleClient.verifyIdToken({
-      idToken, audience: GOOGLE_CLIENT_ID
+    // Use the correct OAuth2Client instance
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID
     });
     const { sub: googleId, email, name, picture } = ticket.getPayload();
 
     // Upsert by google_id or email
     let { rows } = await pool.query(
-      'SELECT id FROM public.users WHERE google_id=$1 OR email=$2',
+      'SELECT id, name, email FROM public.users WHERE google_id=$1 OR email=$2',
       [googleId, email]
     );
-    let userId;
+    let userId, userName, userEmail;
     if (rows.length) {
       userId = rows[0].id;
+      userName = rows[0].name;
+      userEmail = rows[0].email;
       // attach google_id if missing
       await pool.query(
         'UPDATE public.users SET google_id = $1 WHERE id = $2',
@@ -186,16 +191,27 @@ exports.googleLogin = async (req, res) => {
     } else {
       const insert = await pool.query(
         `INSERT INTO public.users (name,email,google_id,avatar) 
-         VALUES ($1,$2,$3,$4) RETURNING id`,
-        [name,email,googleId,picture]
+         VALUES ($1,$2,$3,$4) RETURNING id, name, email`,
+        [name, email, googleId, picture]
       );
       userId = insert.rows[0].id;
+      userName = insert.rows[0].name;
+      userEmail = insert.rows[0].email;
     }
     // Issue JWT
     const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ message: 'Logged in with Google', token, user: { id: userId, name, email } });
+    const responseData = {
+      token,
+      user: {
+        id: userId,
+        name: userName,
+        email: userEmail
+      }
+    };
+    console.log('Google login response:', responseData);
+    res.json(responseData);
   } catch (err) {
-    console.error(err);
+    console.error('Google login error:', err);
     res.status(400).json({ message: 'Google login failed' });
   }
 };

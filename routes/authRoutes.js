@@ -5,7 +5,7 @@ const { register, login, googleLogin, appleLogin } = require('../controllers/aut
 // POST /api/auth/register
 router.post('/register', register);
 router.post('/login',    login);
-router.post('/google', googleLogin);
+ router.post('/googleLogin', googleLogin);
 router.post('/apple', appleLogin);
 
 module.exports = router;
