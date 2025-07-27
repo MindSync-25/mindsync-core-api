@@ -2,6 +2,13 @@
 const sequelize = require('./db/sequelize');
 const User = require('./models/User');
 const Task = require('./models/Task');
+const NewsCategory = require('./models/NewsCategory');
+const NewsArticle = require('./models/NewsArticle');
+const UserNewsPreference = require('./models/UserNewsPreference');
+const UserNewsActivity = require('./models/UserNewsActivity');
+const UserBookmark = require('./models/UserBookmark');
+const AIContentAnalysis = require('./models/AIContentAnalysis');
+const UserAIProfile = require('./models/UserAIProfile');
 
 (async () => {
   try {

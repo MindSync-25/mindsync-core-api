@@ -38,6 +38,16 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  newsOnboardingComplete: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'news_onboarding_complete',
+  },
+  newsPermissionGranted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'news_permission_granted',
+  },
 }, {
   tableName: 'users',
   timestamps: true,

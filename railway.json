@@ -1,0 +1,14 @@
+{
+  "name": "MindSync-Core-API",
+  "description": "Legendary MindSync Backend - News, Weather, Tasks & Authentication",
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "8080"
+  },
+  "build": {
+    "buildCommand": "npm install"
+  },
+  "deploy": {
+    "startCommand": "node server.js"
+  }
+}
