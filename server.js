@@ -315,6 +315,55 @@ app.post('/api/setup/dynamo', async (req, res) => {
   }
 });
 
+// Add mock news data endpoint (for testing when APIs are rate limited)
+app.post('/api/news/seed-mock', async (req, res) => {
+  try {
+    console.log('🧪 Adding mock news articles for testing...');
+    
+    const dynamoService = require('./db/dynamodb');
+    const mockNewsData = require('./data/mockNews');
+    
+    let totalAdded = 0;
+    
+    for (const [categoryName, articles] of Object.entries(mockNewsData)) {
+      console.log(`📰 Adding ${articles.length} mock articles for ${categoryName}...`);
+      
+      for (const article of articles) {
+        try {
+          await dynamoService.saveArticle({
+            ...article,
+            category: categoryName,
+            id: `mock-${categoryName}-${Date.now()}-${Math.random()}`,
+            isActive: true,
+            readTime: Math.floor(Math.random() * 5) + 3 // 3-8 minutes
+          });
+          totalAdded++;
+        } catch (saveError) {
+          console.error(`❌ Error saving mock article:`, saveError.message);
+        }
+      }
+    }
+    
+    console.log(`✅ Added ${totalAdded} mock articles successfully!`);
+    
+    res.json({
+      success: true,
+      message: `Successfully added ${totalAdded} mock articles for testing`,
+      categories: Object.keys(mockNewsData),
+      totalArticles: totalAdded,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error adding mock news:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add mock news',
+      details: error.message
+    });
+  }
+});
+
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
