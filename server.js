@@ -261,11 +261,10 @@ app.post('/api/news/fetch', async (req, res) => {
   try {
     console.log('🔄 Manual DynamoDB news fetch triggered...');
     
-    const NewsFetcher = require('./jobs/newsFetcherDynamo');
-    const fetcher = new NewsFetcher();
+    const newsFetcher = require('./jobs/newsFetcherDynamo');
     
     // Run fetch in background
-    fetcher.fetchAllCategories().then(() => {
+    newsFetcher.fetchNews().then(() => {
       console.log('📰 Manual DynamoDB news fetch completed!');
     }).catch(error => {
       console.error('❌ Manual DynamoDB news fetch failed:', error);
@@ -332,9 +331,8 @@ app.listen(PORT, '0.0.0.0', () => {
       
       // Start news fetching service
       try {
-        const NewsFetcher = require('./jobs/newsFetcherDynamo');
-        const fetcher = new NewsFetcher();
-        fetcher.startScheduledFetching();
+        const newsFetcher = require('./jobs/newsFetcherDynamo');
+        newsFetcher.startScheduledFetching();
         console.log('📰 DynamoDB news fetching service started - updates every 2 hours');
       } catch (fetcherError) {
         console.log('⚠️ News fetcher not available:', fetcherError.message);
