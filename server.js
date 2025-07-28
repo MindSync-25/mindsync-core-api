@@ -366,6 +366,153 @@ app.post('/api/news/seed-mock', async (req, res) => {
   }
 });
 
+// ===============================================
+// AUTHENTICATION ENDPOINTS
+// ===============================================
+
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    console.log(`🔐 Login attempt for: ${email}`);
+    
+    // For now, return a mock successful login
+    // TODO: Implement real authentication with DynamoDB
+    if (email && password) {
+      res.json({
+        success: true,
+        message: 'Login successful',
+        user: {
+          id: 'mock-user-id',
+          email: email,
+          name: email.split('@')[0],
+          preferences: {
+            categories: ['technology', 'science', 'business']
+          }
+        },
+        token: 'mock-jwt-token-12345',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Email and password required'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Login failed',
+      details: error.message
+    });
+  }
+});
+
+// Signup endpoint
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    
+    console.log(`📝 Signup attempt for: ${email}`);
+    
+    // For now, return a mock successful signup
+    // TODO: Implement real user creation with DynamoDB
+    if (email && password) {
+      res.json({
+        success: true,
+        message: 'Account created successfully',
+        user: {
+          id: 'mock-user-id-' + Date.now(),
+          email: email,
+          name: name || email.split('@')[0],
+          preferences: {
+            categories: ['general']
+          }
+        },
+        token: 'mock-jwt-token-signup-' + Date.now(),
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Email and password required'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Signup error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Signup failed',
+      details: error.message
+    });
+  }
+});
+
+// Verify token endpoint
+app.get('/api/auth/verify', (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // For now, accept any token as valid
+      // TODO: Implement real JWT verification
+      res.json({
+        success: true,
+        valid: true,
+        user: {
+          id: 'mock-user-id',
+          email: 'user@example.com',
+          name: 'Mock User'
+        }
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        valid: false,
+        error: 'No valid token provided'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Token verification error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Token verification failed',
+      details: error.message
+    });
+  }
+});
+
+// User preferences endpoint
+app.get('/api/user/preferences', (req, res) => {
+  try {
+    // Mock user preferences
+    res.json({
+      success: true,
+      preferences: {
+        categories: ['technology', 'science', 'business', 'health'],
+        moodTracking: true,
+        notifications: true,
+        theme: 'light'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch preferences',
+      details: error.message
+    });
+  }
+});
+
+// ===============================================
+// SERVER STARTUP
+// ===============================================
+
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
