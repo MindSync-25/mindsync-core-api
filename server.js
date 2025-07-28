@@ -293,11 +293,11 @@ app.post('/api/setup/dynamo', async (req, res) => {
     console.log('⚙️ Setting up DynamoDB tables...');
     
     // Create tables
-    const createTables = require('./scripts/createDynamoTables');
-    await createTables();
+    const { createAllTables } = require('./scripts/createDynamoTables');
+    await createAllTables();
     
     // Seed categories
-    const seedCategories = require('./seeders/seedDynamoCategories');
+    const { seedCategories } = require('./seeders/seedDynamoCategories');
     await seedCategories();
     
     res.json({

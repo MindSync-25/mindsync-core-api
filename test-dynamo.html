@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DynamoDB Setup</title>
+</head>
+<body>
+    <h1>MindSync DynamoDB Setup</h1>
+    
+    <button onclick="setupDynamoDB()">Setup DynamoDB Tables</button>
+    <button onclick="fetchNews()">Fetch News</button>
+    <button onclick="getCategories()">Get Categories</button>
+    <button onclick="getNews()">Get News Articles</button>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;">
+        <h3>Results:</h3>
+        <pre id="output">Click a button to see results...</pre>
+    </div>
+
+    <script>
+        const API_BASE = 'https://mindsync-core-api-production.up.railway.app';
+        
+        async function setupDynamoDB() {
+            try {
+                const response = await fetch(`${API_BASE}/api/setup/dynamo`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function fetchNews() {
+            try {
+                const response = await fetch(`${API_BASE}/api/news/fetch`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function getCategories() {
+            try {
+                const response = await fetch(`${API_BASE}/api/news/categories`);
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function getNews() {
+            try {
+                const response = await fetch(`${API_BASE}/api/news`);
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
