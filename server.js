@@ -21,6 +21,20 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'MindSync Core API - Legendary Backend is LIVE!',
+    status: 'LEGENDARY_DEPLOYED',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      news: '/api/news',
+      weather: '/api/weather', 
+      tasks: '/api/tasks',
+      test: '/test'
+    }
+  });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api', taskRoutes);
