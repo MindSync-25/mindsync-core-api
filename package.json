@@ -2,9 +2,9 @@
   "name": "mindsync-backend",
   "version": "1.0.0",
   "description": "Backend for MindSync authentication and API",
-  "main": "server-simple.js",
+  "main": "server-minimal.js",
   "scripts": {
-    "start": "node server-simple.js",
+    "start": "node server-minimal.js",
     "dev": "nodemon server.js",
     "create-dynamo-tables": "node scripts/createDynamoTables.js",
     "seed-dynamo-categories": "node seeders/seedDynamoCategories.js",

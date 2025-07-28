@@ -99,19 +99,34 @@ async function initializeDatabase() {
     await sequelize.sync({ alter: true });
     console.log('✅ Models synced');
 
-    // Try to initialize news service
+    // Try to initialize news service with timeout protection
     try {
       const seedNewsCategories = require('./seeders/newsCategoriesSeeder');
       await seedNewsCategories();
       console.log('✅ News categories seeded');
 
-      const NewsFetcher = require('./jobs/newsFetcher');
-      const newsFetcher = new NewsFetcher();
-      newsFetcher.startScheduledFetching();
-      await newsFetcher.fetchAllCategories();
-      console.log('✅ News service initialized');
+      // Initialize news fetcher with timeout protection
+      setTimeout(async () => {
+        try {
+          const NewsFetcher = require('./jobs/newsFetcher');
+          const newsFetcher = new NewsFetcher();
+          newsFetcher.startScheduledFetching();
+          
+          // Don't await this on deployment to prevent timeouts
+          newsFetcher.fetchAllCategories().then(() => {
+            console.log('✅ News service initialized successfully');
+          }).catch((error) => {
+            console.log('⚠️ Background news fetch failed:', error.message);
+          });
+          
+        } catch (fetcherError) {
+          console.log('⚠️ News fetcher initialization failed:', fetcherError.message);
+        }
+      }, 5000); // Start news fetching 5 seconds after server starts
+      
+      console.log('✅ News service setup initiated');
     } catch (newsError) {
-      console.log('⚠️ News service initialization failed:', newsError.message);
+      console.log('⚠️ News service setup failed:', newsError.message);
     }
     
   } catch (err) {
