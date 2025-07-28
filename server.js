@@ -57,21 +57,37 @@ const seedNewsCategories = require('./seeders/newsCategoriesSeeder');
     await seedNewsCategories();
     const newsFetcher = new NewsFetcher();
     newsFetcher.startScheduledFetching();
-    // Initial fetch on startup
-    newsFetcher.fetchAllCategories();
-    console.log('News service initialized');
+// Initialize database and news service, then start server
+const sequelize = require('./db/sequelize');
+(async function initialize() {
+  try {
+    console.log('🔄 Connecting to database...');
+    await sequelize.authenticate();
+    console.log('✅ Database connected');
+
+    console.log('🔄 Syncing models...');
+    await sequelize.sync({ alter: true });
+    console.log('✅ Models synced');
+
+    console.log('🔄 Initializing news service...');
+    await newsFetcher.fetchAllCategories();
+    console.log('✅ News service initialized');
+
+    // Start Express server after initialization
+    const PORT = process.env.PORT || 5000;
+    const HOST = '0.0.0.0';
+    app.listen(PORT, HOST, () => {
+      console.log(`🚀 Server running at http://${HOST}:${PORT}`);
+    });
+  } catch (err) {
+    console.error('❌ Startup error:', err);
+    process.exit(1);
+  }
+})();
   } catch (error) {
     console.error('Error initializing news service:', error);
   }
 })();
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-const HOST = '0.0.0.0'; // Required for Railway deployment
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running on ${HOST}:${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📡 Database: ${process.env.DATABASE_URL ? 'Railway PostgreSQL' : 'Local PostgreSQL'}`);
-});
 
 

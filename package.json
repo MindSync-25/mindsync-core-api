@@ -4,7 +4,7 @@
   "description": "Backend for MindSync authentication and API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node railway-init.js && node server.js",
     "dev": "nodemon server.js",
     "create-dynamo-tables": "node scripts/createDynamoTables.js",
     "seed-dynamo-categories": "node seeders/seedDynamoCategories.js",
