@@ -10,9 +10,9 @@ app.use(express.json());
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'MindSync Core API - DynamoDB!',
+    message: 'MindSync Core API - DynamoDB READY!',
     status: 'SUCCESS',
-    version: '1.0.5',
+    version: '1.0.6',
     database: 'DynamoDB',
     timestamp: new Date().toISOString()
   });
