@@ -39,29 +39,88 @@ app.get('/api/news', (req, res) => {
   });
 });
 
-// Real database articles endpoint
+// Real database articles endpoint - NEWS FEED (ALL ARTICLES)
 app.get('/api/news/articles', async (req, res) => {
   try {
     const NewsArticle = require('./models/NewsArticle');
     const NewsCategory = require('./models/NewsCategory');
     
-    const { limit = 20, categories } = req.query;
+    const { limit = 50 } = req.query; // Increased default limit for news feed
     
-    let whereClause = { isActive: true };
+    // NEWS FEED: Get ALL articles, no category filtering
+    console.log(`📰 Fetching news feed - showing ALL articles (limit: ${limit})`);
     
-    // Filter by categories if provided
-    if (categories) {
-      const categoryNames = categories.split(',');
-      const categoryObjs = await NewsCategory.findAll({
-        where: { name: categoryNames },
-        attributes: ['id']
-      });
-      whereClause.categoryId = categoryObjs.map(cat => cat.id);
+    // Get ALL real articles from database
+    const articles = await NewsArticle.findAll({
+      where: { isActive: true }, // No category filter - show ALL news
+      include: [{ 
+        model: NewsCategory, 
+        attributes: ['name', 'displayName'] 
+      }],
+      order: [['publishedAt', 'DESC']], // Latest first
+      limit: Math.min(parseInt(limit), 100) // Allow more articles for feed
+    });
+
+    const formattedArticles = articles.map(article => ({
+      id: article.id,
+      title: article.title,
+      description: article.description,
+      url: article.url,
+      imageUrl: article.imageUrl,
+      source: article.source,
+      author: article.author,
+      publishedAt: article.publishedAt,
+      category: article.NewsCategory.name,
+      readTime: `${article.readTime} min read`,
+      sentiment: article.sentiment,
+      moodTags: article.moodTags || [],
+      isBookmarked: false
+    }));
+
+    console.log(`✅ Returning ${formattedArticles.length} articles from ALL categories`);
+
+    res.json({
+      success: true,
+      articles: formattedArticles,
+      pagination: {
+        totalCount: formattedArticles.length,
+        hasMore: formattedArticles.length >= parseInt(limit)
+      },
+      source: 'database_all_categories'
+    });
+    
+  } catch (error) {
+    console.error('Database error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch articles from database',
+      details: error.message
+    });
+  }
+});
+
+// Category-specific articles endpoint (for when users want specific categories)
+app.get('/api/news/articles/category/:category', async (req, res) => {
+  try {
+    const NewsArticle = require('./models/NewsArticle');
+    const NewsCategory = require('./models/NewsCategory');
+    
+    const { category } = req.params;
+    const { limit = 20 } = req.query;
+    
+    console.log(`📰 Fetching articles for specific category: ${category}`);
+    
+    // Get category-specific articles
+    const categoryObj = await NewsCategory.findOne({ where: { name: category } });
+    if (!categoryObj) {
+      return res.status(404).json({ error: 'Category not found' });
     }
     
-    // Get real articles from database
     const articles = await NewsArticle.findAll({
-      where: whereClause,
+      where: { 
+        isActive: true,
+        categoryId: categoryObj.id 
+      },
       include: [{ 
         model: NewsCategory, 
         attributes: ['name', 'displayName'] 
@@ -89,6 +148,7 @@ app.get('/api/news/articles', async (req, res) => {
     res.json({
       success: true,
       articles: formattedArticles,
+      category: category,
       pagination: {
         totalCount: formattedArticles.length,
         hasMore: false
@@ -99,7 +159,7 @@ app.get('/api/news/articles', async (req, res) => {
     console.error('Database error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch articles from database',
+      error: 'Failed to fetch category articles',
       details: error.message
     });
   }
