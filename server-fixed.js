@@ -7,27 +7,6 @@ const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// Helper function for mood filtering
-function filterContentForMood(articles, mood) {
-  if (!mood) return articles;
-
-  return articles.filter(article => {
-    // For vulnerable moods, be more strict
-    if (['sad', 'stressed'].includes(mood)) {
-      return article.sentiment !== 'negative' && 
-             article.isHealthyContent === true &&
-             !article.title.toLowerCase().includes('crisis');
-    }
-    
-    // For positive moods, include motivational content
-    if (['excited', 'motivated'].includes(mood)) {
-      return article.sentiment !== 'negative';
-    }
-    
-    return article.isHealthyContent === true;
-  });
-}
-
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
@@ -63,7 +42,7 @@ app.get('/api/news', (req, res) => {
 // ALL articles endpoint - NEWS FEED
 app.get('/api/news/articles', async (req, res) => {
   try {
-    console.log('📰 Fetching ALL articles for news feed...');
+    console.log('📰 Fetching articles for news feed...');
     
     // Try to load models safely
     let NewsArticle, NewsCategory;
@@ -79,11 +58,30 @@ app.get('/api/news/articles', async (req, res) => {
       });
     }
 
-    const { limit = 50 } = req.query;
+    const { limit = 50, categories } = req.query;
     
-    // Get ALL real articles from database
+    let whereClause = { isActive: true };
+    
+    // Filter by categories if user selected specific ones
+    if (categories) {
+      const categoryNames = categories.split(',');
+      console.log(`🔍 Filtering by categories: ${categoryNames.join(', ')}`);
+      
+      const categoryObjs = await NewsCategory.findAll({
+        where: { name: categoryNames },
+        attributes: ['id']
+      });
+      
+      if (categoryObjs.length > 0) {
+        whereClause.categoryId = categoryObjs.map(cat => cat.id);
+      }
+    } else {
+      console.log('📰 Showing ALL categories (no filter)');
+    }
+    
+    // Get articles from database
     const articles = await NewsArticle.findAll({
-      where: { isActive: true },
+      where: whereClause,
       include: [{ 
         model: NewsCategory, 
         attributes: ['name', 'displayName'] 
@@ -105,20 +103,20 @@ app.get('/api/news/articles', async (req, res) => {
       readTime: `${article.readTime || 5} min read`,
       sentiment: article.sentiment || 'neutral',
       moodTags: article.moodTags || [],
-      isBookmarked: false,
-      isHealthyContent: true
+      isBookmarked: false
     }));
 
-    console.log(`✅ Returning ${formattedArticles.length} articles from ALL categories`);
+    console.log(`✅ Returning ${formattedArticles.length} articles`);
 
     res.json({
       success: true,
       articles: formattedArticles,
+      selectedCategories: categories ? categories.split(',') : 'all',
       pagination: {
         totalCount: formattedArticles.length,
         hasMore: formattedArticles.length >= parseInt(limit)
       },
-      source: 'database_all_categories'
+      source: 'database'
     });
     
   } catch (error) {
@@ -151,9 +149,9 @@ app.get('/api/news/articles/category/:category', async (req, res) => {
     }
 
     const { category } = req.params;
-    const { limit = 20, mood } = req.query;
+    const { limit = 20 } = req.query;
     
-    console.log(`📰 Fetching articles for category: ${category}, mood: ${mood || 'none'}`);
+    console.log(`📰 Fetching articles for category: ${category}`);
     
     // Get category-specific articles
     const categoryObj = await NewsCategory.findOne({ where: { name: category } });
@@ -180,7 +178,7 @@ app.get('/api/news/articles/category/:category', async (req, res) => {
       limit: Math.min(parseInt(limit), 50)
     });
 
-    let formattedArticles = articles.map(article => ({
+    const formattedArticles = articles.map(article => ({
       id: article.id,
       title: article.title,
       description: article.description,
@@ -193,15 +191,8 @@ app.get('/api/news/articles/category/:category', async (req, res) => {
       readTime: `${article.readTime || 5} min read`,
       sentiment: article.sentiment || 'neutral',
       moodTags: article.moodTags || [],
-      isBookmarked: false,
-      isHealthyContent: true
+      isBookmarked: false
     }));
-
-    // Apply mood filtering if mood is specified
-    if (mood) {
-      formattedArticles = filterContentForMood(formattedArticles, mood);
-      console.log(`🎭 Applied mood filter '${mood}': ${formattedArticles.length} articles remaining`);
-    }
 
     console.log(`✅ Returning ${formattedArticles.length} articles for category: ${category}`);
 
@@ -210,7 +201,6 @@ app.get('/api/news/articles/category/:category', async (req, res) => {
       articles: formattedArticles,
       category: category,
       categoryDisplayName: categoryObj.displayName,
-      moodFilter: mood || null,
       pagination: {
         totalCount: formattedArticles.length,
         hasMore: false
