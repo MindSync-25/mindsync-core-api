@@ -118,7 +118,7 @@ module.exports = {
       });
 
       // Filter for mood-based content safety
-      const filteredArticles = this.filterContentForMood(articles, mood);
+      const filteredArticles = module.exports.filterContentForMood(articles, mood);
 
       const totalCount = await NewsArticle.count({ where: whereClause });
 
@@ -200,7 +200,7 @@ module.exports = {
         offset: parseInt(offset) || 0
       });
 
-      const filteredArticles = this.filterContentForMood(articles, mood);
+      const filteredArticles = module.exports.filterContentForMood(articles, mood);
 
       res.json({
         articles: filteredArticles.map(article => ({
