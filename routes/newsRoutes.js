@@ -6,6 +6,22 @@ const userNewsController = require('../controllers/userNewsController');
 const { authenticateToken } = require('../middleware/auth');
 
 // Public routes
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'MindSync News API - Ready to serve!',
+    version: '1.0.0',
+    endpoints: {
+      categories: '/api/news/categories',
+      articles: '/api/news/articles',
+      userPreferences: '/api/news/user/preferences (requires auth)',
+      bookmarks: '/api/news/bookmarks (requires auth)',
+      moodArticles: '/api/news/articles/mood/:mood (requires auth)'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 router.get('/categories', newsController.getCategories);
 router.get('/articles', newsController.getArticles);
 
