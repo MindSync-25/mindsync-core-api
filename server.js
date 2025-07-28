@@ -47,18 +47,9 @@ app.get('/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
 
-// Initialize news fetching
-const NewsFetcher = require('./jobs/newsFetcher');
-const seedNewsCategories = require('./seeders/newsCategoriesSeeder');
-
-// Seed categories and start news fetching on startup
-(async () => {
-  try {
-    await seedNewsCategories();
-    const newsFetcher = new NewsFetcher();
-    newsFetcher.startScheduledFetching();
 // Initialize database and news service, then start server
 const sequelize = require('./db/sequelize');
+
 (async function initialize() {
   try {
     console.log('🔄 Connecting to database...');
@@ -69,23 +60,40 @@ const sequelize = require('./db/sequelize');
     await sequelize.sync({ alter: true });
     console.log('✅ Models synced');
 
-    console.log('🔄 Initializing news service...');
-    await newsFetcher.fetchAllCategories();
-    console.log('✅ News service initialized');
+    // Try to initialize news service (optional)
+    try {
+      console.log('🔄 Seeding news categories...');
+      const seedNewsCategories = require('./seeders/newsCategoriesSeeder');
+      await seedNewsCategories();
+      console.log('✅ News categories seeded');
+
+      console.log('🔄 Initializing news service...');
+      const NewsFetcher = require('./jobs/newsFetcher');
+      const newsFetcher = new NewsFetcher();
+      newsFetcher.startScheduledFetching();
+      await newsFetcher.fetchAllCategories();
+      console.log('✅ News service initialized');
+    } catch (newsError) {
+      console.log('⚠️ News service initialization failed (continuing without it):', newsError.message);
+    }
 
     // Start Express server after initialization
     const PORT = process.env.PORT || 5000;
     const HOST = '0.0.0.0';
     app.listen(PORT, HOST, () => {
       console.log(`🚀 Server running at http://${HOST}:${PORT}`);
+      console.log(`🌐 API available at: http://${HOST}:${PORT}/api/news`);
     });
   } catch (err) {
     console.error('❌ Startup error:', err);
-    process.exit(1);
-  }
-})();
-  } catch (error) {
-    console.error('Error initializing news service:', error);
+    
+    // Fallback: Start server without database if needed
+    console.log('🔄 Starting server in fallback mode...');
+    const PORT = process.env.PORT || 5000;
+    const HOST = '0.0.0.0';
+    app.listen(PORT, HOST, () => {
+      console.log(`🚀 Fallback server running at http://${HOST}:${PORT}`);
+    });
   }
 })();
 
