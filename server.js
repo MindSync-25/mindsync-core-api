@@ -332,7 +332,7 @@ app.listen(PORT, '0.0.0.0', () => {
       // Start news fetching service
       try {
         const newsFetcher = require('./jobs/newsFetcherDynamo');
-        newsFetcher.startScheduledFetching();
+        newsFetcher.start();
         console.log('📰 DynamoDB news fetching service started - updates every 2 hours');
       } catch (fetcherError) {
         console.log('⚠️ News fetcher not available:', fetcherError.message);
