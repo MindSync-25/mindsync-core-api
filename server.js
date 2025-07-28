@@ -330,12 +330,14 @@ app.post('/api/news/seed-mock', async (req, res) => {
       
       for (const article of articles) {
         try {
-          await dynamoService.saveArticle({
+          await dynamoService.createArticle({
             ...article,
             category: categoryName,
             id: `mock-${categoryName}-${Date.now()}-${Math.random()}`,
             isActive: true,
-            readTime: Math.floor(Math.random() * 5) + 3 // 3-8 minutes
+            readTime: Math.floor(Math.random() * 5) + 3, // 3-8 minutes
+            moodTags: ['positive'], // Add required moodTags field
+            sentiment: 'positive'
           });
           totalAdded++;
         } catch (saveError) {
