@@ -10,9 +10,9 @@ app.use(express.json());
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'MindSync Core API - LIVE!',
+    message: 'MindSync Core API - LIVE and DEPLOYED!',
     status: 'SUCCESS',
-    version: '1.0.0',
+    version: '1.0.1',
     timestamp: new Date().toISOString(),
     endpoints: [
       'GET /',
