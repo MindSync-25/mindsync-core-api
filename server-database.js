@@ -106,14 +106,20 @@ app.get('/api/news/articles/category/:category', async (req, res) => {
     const NewsCategory = require('./models/NewsCategory');
     
     const { category } = req.params;
-    const { limit = 20 } = req.query;
+    const { limit = 20, mood } = req.query;
     
-    console.log(`📰 Fetching articles for specific category: ${category}`);
+    console.log(`📰 Fetching articles for specific category: ${category}, mood: ${mood}`);
     
     // Get category-specific articles
     const categoryObj = await NewsCategory.findOne({ where: { name: category } });
     if (!categoryObj) {
-      return res.status(404).json({ error: 'Category not found' });
+      console.log(`❌ Category not found: ${category}`);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Category not found',
+        category: category,
+        availableCategories: ['technology', 'gaming', 'business', 'science', 'health']
+      });
     }
     
     const articles = await NewsArticle.findAll({
@@ -129,7 +135,7 @@ app.get('/api/news/articles/category/:category', async (req, res) => {
       limit: Math.min(parseInt(limit), 50)
     });
 
-    const formattedArticles = articles.map(article => ({
+    let formattedArticles = articles.map(article => ({
       id: article.id,
       title: article.title,
       description: article.description,
@@ -142,13 +148,24 @@ app.get('/api/news/articles/category/:category', async (req, res) => {
       readTime: `${article.readTime} min read`,
       sentiment: article.sentiment,
       moodTags: article.moodTags || [],
-      isBookmarked: false
+      isBookmarked: false,
+      isHealthyContent: true // Default to true for existing articles
     }));
+
+    // Apply mood filtering if mood is specified
+    if (mood) {
+      formattedArticles = filterContentForMood(formattedArticles, mood);
+      console.log(`🎭 Applied mood filter '${mood}': ${formattedArticles.length} articles remaining`);
+    }
+
+    console.log(`✅ Returning ${formattedArticles.length} articles for category: ${category}`);
 
     res.json({
       success: true,
       articles: formattedArticles,
       category: category,
+      categoryDisplayName: categoryObj.displayName,
+      moodFilter: mood || null,
       pagination: {
         totalCount: formattedArticles.length,
         hasMore: false
@@ -156,11 +173,12 @@ app.get('/api/news/articles/category/:category', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('❌ Database error in category endpoint:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch category articles',
-      details: error.message
+      details: error.message,
+      category: req.params.category
     });
   }
 });
@@ -198,6 +216,27 @@ app.get('/api/news/categories', async (req, res) => {
     });
   }
 });
+
+// Helper function for mood filtering (in case it's called somewhere)
+function filterContentForMood(articles, mood) {
+  if (!mood) return articles;
+
+  return articles.filter(article => {
+    // For vulnerable moods, be more strict
+    if (['sad', 'stressed'].includes(mood)) {
+      return article.sentiment !== 'negative' && 
+             article.isHealthyContent === true &&
+             !article.title.toLowerCase().includes('crisis');
+    }
+    
+    // For positive moods, include motivational content
+    if (['excited', 'motivated'].includes(mood)) {
+      return article.sentiment !== 'negative';
+    }
+    
+    return article.isHealthyContent === true;
+  });
+}
 
 // Start server
 const PORT = process.env.PORT || 5000;
