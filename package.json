@@ -2,9 +2,9 @@
   "name": "mindsync-backend",
   "version": "1.0.1",
   "description": "Backend for MindSync authentication and API - Railway Deploy",
-  "main": "server-database.js",
+  "main": "server-fixed.js",
   "scripts": {
-    "start": "node server-database.js",
+    "start": "node server-fixed.js",
     "dev": "nodemon server-minimal.js",
     "create-dynamo-tables": "node scripts/createDynamoTables.js",
     "seed-dynamo-categories": "node seeders/seedDynamoCategories.js",
