@@ -8,7 +8,7 @@ const sequelize = process.env.DATABASE_URL
       dialect: 'postgres',
       logging: false,
       dialectOptions: {
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+        ssl: { require: true, rejectUnauthorized: false }
       }
     })
   : new Sequelize('mindsync', 'postgres', 'root', {
