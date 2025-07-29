@@ -37,13 +37,13 @@ class NewsFetcherDynamo {
 
   start() {
     console.log('🚀 Starting DynamoDB News Fetcher Service...');
-    console.log('⏰ Schedule: Every 2 hours');
-    console.log('🗂️ Storage: DynamoDB with TTL auto-cleanup');
+    console.log('⏰ Schedule: Every 6 hours (Rate-limit optimized)');
+    console.log('🗂️ Storage: DynamoDB with 10-day TTL auto-cleanup');
     console.log('📡 Sources: NewsAPI + GNews API');
     
-    // Schedule: Run every 2 hours
+    // Schedule: Run every 6 hours (4 times daily to respect API limits)
     // Format: minute hour day month day-of-week
-    const schedule = '0 */2 * * *'; // Every 2 hours at minute 0
+    const schedule = '0 */6 * * *'; // Every 6 hours at minute 0 (00:00, 06:00, 12:00, 18:00)
     
     cron.schedule(schedule, async () => {
       await this.fetchNews();
@@ -52,14 +52,14 @@ class NewsFetcherDynamo {
       timezone: 'America/New_York'
     });
 
-    // Calculate next run time
+    // Calculate next run time (every 6 hours)
     const now = new Date();
-    const nextHour = Math.ceil(now.getHours() / 2) * 2;
+    const nextHour = Math.ceil(now.getHours() / 6) * 6;
     this.nextRunTime = new Date(now);
     this.nextRunTime.setHours(nextHour, 0, 0, 0);
     
     if (this.nextRunTime <= now) {
-      this.nextRunTime.setTime(this.nextRunTime.getTime() + (2 * 60 * 60 * 1000));
+      this.nextRunTime.setTime(this.nextRunTime.getTime() + (6 * 60 * 60 * 1000));
     }
 
     console.log(`📅 Next scheduled run: ${this.nextRunTime.toISOString()}`);
@@ -82,9 +82,9 @@ class NewsFetcherDynamo {
       isRunning: this.isRunning,
       lastRunTime: this.lastRunTime,
       nextRunTime: this.nextRunTime,
-      schedule: 'Every 2 hours',
+      schedule: 'Every 6 hours (Rate-limit optimized)',
       storage: 'DynamoDB',
-      ttl: '30 days auto-cleanup'
+      ttl: '10 days auto-cleanup'
     };
   }
 }

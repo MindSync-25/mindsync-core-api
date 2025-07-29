@@ -58,7 +58,7 @@ class DynamoDBService {
         isHealthyContent: article.isHealthyContent,
         isActive: article.isActive,
         viewCount: article.viewCount || 0,
-        TTL: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 days TTL
+        TTL: Math.floor(Date.now() / 1000) + (10 * 24 * 60 * 60), // 10 days TTL
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }

@@ -268,7 +268,7 @@ class NewsService {
     }
     
     console.log(`\n🎉 News fetch completed! Total articles saved: ${totalArticles}`);
-    console.log('💾 All articles stored in DynamoDB with TTL for auto-cleanup');
+    console.log('💾 All articles stored in DynamoDB with 10-day TTL auto-cleanup');
     
     return {
       success: true,
