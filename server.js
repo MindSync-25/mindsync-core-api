@@ -511,6 +511,31 @@ app.get('/api/user/preferences', (req, res) => {
   }
 });
 
+// Database connection test
+app.get('/api/db-test', async (req, res) => {
+  const { Pool } = require('pg');
+  const pool = new Pool({
+    connectionString: process.env.POSTGRES_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  });
+
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ 
+      success: true, 
+      message: 'Database connected!',
+      time: result.rows[0].now,
+      env: process.env.NODE_ENV
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Database connection failed',
+      details: error.message 
+    });
+  }
+});
+
 // ===============================================
 // SERVER STARTUP
 // ===============================================

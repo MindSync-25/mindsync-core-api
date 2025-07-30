@@ -1,7 +1,14 @@
 // controllers/weatherController.js
+const axios = require('axios');
+const { Pool } = require('pg');
 const weatherService = require('../services/weatherService');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY || 'your-api-key';
+
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL, // Changed from DATABASE_URL
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 module.exports = {
   async getCurrentWeather(req, res) {
@@ -55,6 +62,146 @@ module.exports = {
       res.json({ insights });
     } catch (err) {
       res.status(500).json({ error: 'Failed to analyze tasks', details: err.message });
+    }
+  },
+
+  // Get weather data
+  async getWeather(req, res) {
+    try {
+      const { city, user_id } = req.query;
+
+      if (!city) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'City parameter is required' 
+        });
+      }
+
+      if (!process.env.OPENWEATHER_API_KEY) { // Changed from WEATHER_API_KEY
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Weather API key not configured' 
+        });
+      }
+
+      // Check cache first (optional)
+      if (user_id) {
+        const cacheResult = await pool.query(
+          `SELECT weather_data FROM weather_logs 
+           WHERE user_id = $1 AND city = $2 
+           AND created_at > NOW() - INTERVAL '30 minutes'
+           ORDER BY created_at DESC LIMIT 1`,
+          [user_id, city]
+        );
+
+        if (cacheResult.rows.length > 0) {
+          console.log('📍 Returning cached weather data');
+          return res.json({ 
+            success: true, 
+            weather: cacheResult.rows[0].weather_data,
+            cached: true 
+          });
+        }
+      }
+
+      // Fetch fresh data
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`
+      );
+
+      const weatherData = {
+        city: response.data.name,
+        country: response.data.sys.country,
+        temperature: response.data.main.temp,
+        feels_like: response.data.main.feels_like,
+        humidity: response.data.main.humidity,
+        description: response.data.weather[0].description,
+        icon: response.data.weather[0].icon,
+        wind_speed: response.data.wind.speed,
+        timestamp: new Date().toISOString()
+      };
+
+      // Cache the result if user_id provided
+      if (user_id) {
+        await pool.query(
+          'INSERT INTO weather_logs (user_id, city, weather_data) VALUES ($1, $2, $3)',
+          [user_id, city, weatherData]
+        ).catch(err => console.error('Cache error:', err));
+      }
+
+      res.json({ 
+        success: true, 
+        weather: weatherData 
+      });
+    } catch (error) {
+      console.error('Error fetching weather:', error.message);
+      
+      if (error.response?.status === 404) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'City not found' 
+        });
+      }
+
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch weather data',
+        details: error.message 
+      });
+    }
+  },
+
+  // Get weather forecast
+  async getWeatherForecast(req, res) {
+    try {
+      const { city } = req.query;
+
+      if (!city) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'City parameter is required' 
+        });
+      }
+
+      if (!process.env.OPENWEATHER_API_KEY) { // Changed from WEATHER_API_KEY
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Weather API key not configured' 
+        });
+      }
+
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric&cnt=5`
+      );
+
+      const forecast = response.data.list.map(item => ({
+        date: item.dt_txt,
+        temperature: item.main.temp,
+        description: item.weather[0].description,
+        icon: item.weather[0].icon
+      }));
+
+      res.json({ 
+        success: true, 
+        city: response.data.city.name,
+        country: response.data.city.country,
+        forecast 
+      });
+    } catch (error) {
+      console.error('Error fetching forecast:', error.message);
+      
+      if (error.response?.status === 404) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'City not found' 
+        });
+      }
+
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch weather forecast',
+        details: error.message 
+      });
     }
   }
 };
