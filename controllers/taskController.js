@@ -1,19 +1,19 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL, // Changed from DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 // Get all tasks for a user
 exports.getTasks = async (req, res) => {
   try {
-    const { user_id } = req.query;
+    const user_id = req.query.user_id || req.user?.id; // Check both query and auth
     
     if (!user_id) {
       return res.status(400).json({ 
         success: false, 
-        error: 'user_id is required' 
+        error: 'User ID is required' 
       });
     }
 
@@ -21,18 +21,16 @@ exports.getTasks = async (req, res) => {
       'SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC',
       [user_id]
     );
-
+    
     res.json({ 
       success: true, 
-      tasks: result.rows,
-      total: result.rows.length 
+      tasks: result.rows 
     });
   } catch (error) {
     console.error('Error fetching tasks:', error);
     res.status(500).json({ 
       success: false, 
-      error: 'Failed to fetch tasks',
-      details: error.message 
+      error: 'Failed to fetch tasks' 
     });
   }
 };
