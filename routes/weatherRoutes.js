@@ -10,7 +10,7 @@ router.get('/', weatherController.getWeather);
 router.get('/current', weatherController.getCurrentWeather);
 
 // GET /api/weather/forecast?city=London
-router.get('/forecast', weatherController.getWeatherForecast);
+router.get('/forecast', weatherController.getWeather);
 
 // GET /api/weather/hourly?lat=xxx&lon=xxx
 router.get('/hourly', weatherController.getHourlyForecast);

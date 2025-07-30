@@ -41,17 +41,33 @@ module.exports = {
     }
   },
 
-  async getHourlyWeather(req, res) {
+  async getHourlyForecast(req, res) {
     try {
       const { lat, lon } = req.query;
-      const data = await weatherService.getHourlyWeather(lat, lon);
-      res.json(data);
-    } catch (err) {
-      res.status(500).json({ error: 'Failed to fetch hourly weather', details: err.message });
+      if (!lat || !lon) {
+        return res.status(400).json({ error: 'Latitude and longitude are required' });
+      }
+
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric&cnt=8`
+      );
+
+      const hourlyData = response.data.list.map(item => ({
+        time: new Date(item.dt * 1000).toISOString(),
+        temperature: Math.round(item.main.temp),
+        condition: item.weather[0].description,
+        icon: `https://openweathermap.org/img/wn/${item.weather[0].icon}@2x.png`,
+        precipitationChance: item.pop ? Math.round(item.pop * 100) : 0
+      }));
+
+      res.json(hourlyData);
+    } catch (error) {
+      console.error('Error fetching hourly forecast:', error.message);
+      res.status(500).json({ error: 'Failed to fetch hourly forecast' });
     }
   },
 
-  async getWeeklyWeather(req, res) {
+  async getWeeklyForecast(req, res) {
     try {
       const { lat, lon } = req.query;
       console.log('📍 Weekly forecast request:', { lat, lon });
